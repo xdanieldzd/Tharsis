@@ -11,7 +11,7 @@ namespace Tharsis
     [FileExtensions(".stex", ".png")]
     public class STEX : BaseFile
     {
-        [DllImport("ETC1.dll", EntryPoint = "ConvertETC1", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("ETC1Lib.dll", EntryPoint = "ConvertETC1", CallingConvention = CallingConvention.Cdecl)]
         private static extern void ConvertETC1(IntPtr dataOut, ref UInt32 dataOutSize, IntPtr dataIn, UInt16 width, UInt16 height, bool alpha);
 
         public enum Formats : uint
@@ -92,7 +92,7 @@ namespace Tharsis
                     Buffer.BlockCopy(textureData, 0, input, 0, textureData.Length);
                     GCHandle pInput = GCHandle.Alloc(input, GCHandleType.Pinned);
 
-                    /* Marshal data around, invoke ETC1.dll for conversion, etc */
+                    /* Marshal data around, invoke ETC1Lib.dll for conversion, etc */
                     UInt32 dataSize = 0;
                     UInt16 marshalWidth = (ushort)Width, marshalHeight = (ushort)Height;
                     ConvertETC1(IntPtr.Zero, ref dataSize, IntPtr.Zero, marshalWidth, marshalHeight, (Format == Formats.ETC1A4));
@@ -102,7 +102,7 @@ namespace Tharsis
                     pOutput.Free();
                     pInput.Free();
 
-                    /* Unscramble if needed // could probably be done in ETC1.dll, it's probably pretty damn ugly, but whatever... */
+                    /* Unscramble if needed // could probably be done in ETC1Lib.dll, it's probably pretty damn ugly, but whatever... */
                     /* Non-square code blocks could need some cleanup, verification, etc. as well... */
                     uint[] finalized = new uint[output.Length];
 

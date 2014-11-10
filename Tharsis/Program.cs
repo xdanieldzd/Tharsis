@@ -158,16 +158,16 @@ namespace Tharsis
 
         private static void VerifyETC1Library()
         {
-            string etc1LibraryPath = Path.Combine(Path.GetDirectoryName(ApplicationPath), "ETC1.dll");
+            string etc1LibraryPath = Path.Combine(Path.GetDirectoryName(ApplicationPath), "ETC1Lib.dll");
             if (!File.Exists(etc1LibraryPath))
             {
-                Console.WriteLine("Error: 'ETC1.dll' not found!");
+                Console.WriteLine("Error: 'ETC1Lib.dll' not found!");
                 Console.WriteLine();
                 WaitForExit(-2);
             }
             else if (GetProcAddress(LoadLibrary(etc1LibraryPath), "ConvertETC1") == UIntPtr.Zero)
             {
-                Console.WriteLine("Error: Invalid 'ETC1.dll' detected!");
+                Console.WriteLine("Error: Invalid 'ETC1Lib.dll' detected!");
                 Console.WriteLine();
                 WaitForExit(-2);
             }
