@@ -27,8 +27,9 @@ namespace Tharsis
         static string inputFilter;
         static string outputPath;
 
-        static bool noDeepScan = true;
-        static bool keepExistingFiles = false;
+        public static bool NoDeepScan = true;
+        public static bool KeepExistingFiles = false;
+        public static bool ConvertTMXIndexed = false;
 
         static void Main(string[] args)
         {
@@ -76,7 +77,7 @@ namespace Tharsis
                 string displayInput = InputPath.Replace(Path.GetDirectoryName(InputPath), "").TrimStart(Path.DirectorySeparatorChar);
                 if (!Directory.Exists(Path.GetDirectoryName(outputPath))) Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
 
-                if ((File.Exists(outputPath) && keepExistingFiles) || fileType == null)
+                if ((File.Exists(outputPath) && KeepExistingFiles) || fileType == null)
                     Console.WriteLine("Skipping {0}...", displayInput);
                 else
                 {
@@ -103,7 +104,7 @@ namespace Tharsis
                     }
 
                     Console.WriteLine(string.Format("Processing {0}s...", type.Name).StyleLine(LineType.Overline | LineType.Underline));
-                    List<string> files = Directory.EnumerateFiles(InputPath, fileFilter, (noDeepScan ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly)).ToList();
+                    List<string> files = Directory.EnumerateFiles(InputPath, fileFilter, (NoDeepScan ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly)).ToList();
                     if (files.Count > 0)
                     {
                         foreach (string file in files)
@@ -115,7 +116,7 @@ namespace Tharsis
                             string displayInput = file.Replace(InputPath, "").TrimStart(Path.DirectorySeparatorChar);
                             if (!Directory.Exists(Path.GetDirectoryName(outputFile))) Directory.CreateDirectory(Path.GetDirectoryName(outputFile));
 
-                            if (File.Exists(outputFile) && keepExistingFiles)
+                            if (File.Exists(outputFile) && KeepExistingFiles)
                                 Console.WriteLine("Skipping {0}...", displayInput);
                             else
                             {
@@ -184,13 +185,13 @@ namespace Tharsis
 
             Switches.Add(new Switch("nosubdir", "Do not search all sub-directories inside input directory", new Func<string[], int, int>((arguments, index) =>
             {
-                noDeepScan = false;
+                NoDeepScan = false;
                 return index;
             }), shortOption: "n"));
 
             Switches.Add(new Switch("keep", "Do not overwrite converted files that already exist", new Func<string[], int, int>((arguments, index) =>
             {
-                keepExistingFiles = true;
+                KeepExistingFiles = true;
                 return index;
             }), shortOption: "k"));
 
@@ -199,6 +200,12 @@ namespace Tharsis
                 EO4String.TransformToAscii = true;
                 return index;
             }), shortOption: "a"));
+
+            Switches.Add(new Switch("colorindex", "Convert TMX files to indexed color images, preserving the palette and color order", new Func<string[], int, int>((arguments, index) =>
+            {
+                ConvertTMXIndexed = true;
+                return index;
+            }), shortOption: "c"));
 
             Switches.Add(new Switch("help", "Show this help message", new Func<string[], int, int>((arguments, index) =>
             {

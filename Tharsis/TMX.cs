@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using System.Drawing;
+using System.Drawing.Imaging;
+using System.Runtime.InteropServices;
 
 namespace Tharsis
 {
@@ -29,6 +31,9 @@ namespace Tharsis
         public byte[] PixelData { get; private set; }
 
         public Bitmap Image { get; private set; }
+
+        BitmapData bmpData;
+        byte[] pixelData;
 
         public TMX(string path) : base(path) { }
 
@@ -86,14 +91,37 @@ namespace Tharsis
         {
             Palette = ConvertPalette(reader, 16);
 
-            Image = new Bitmap(Width, Height);
-            for (int y = 0; y < Height; y++)
+            if (Program.ConvertTMXIndexed)
             {
-                for (int x = 0; x < Width; x += 2)
+                Image = new Bitmap(Width, Height, PixelFormat.Format4bppIndexed);
+
+                int dataSize = (Width * Height) / 2;
+
+                ColorPalette imagePalette = Image.Palette;
+                Array.Copy(Palette, imagePalette.Entries, Palette.Length);
+                Image.Palette = imagePalette;
+
+                bmpData = Image.LockBits(new Rectangle(0, 0, Image.Width, Image.Height), ImageLockMode.ReadWrite, Image.PixelFormat);
+                pixelData = new byte[bmpData.Height * bmpData.Stride];
+                Marshal.Copy(bmpData.Scan0, pixelData, 0, pixelData.Length);
+
+                Buffer.BlockCopy(reader.ReadBytes(dataSize), 0, pixelData, 0, dataSize);
+                for (int i = 0; i < pixelData.Length; i++) pixelData[i] = (byte)((pixelData[i] >> 4) | (pixelData[i] << 4));
+
+                Marshal.Copy(pixelData, 0, bmpData.Scan0, pixelData.Length);
+                Image.UnlockBits(bmpData);
+            }
+            else
+            {
+                Image = new Bitmap(Width, Height);
+                for (int y = 0; y < Height; y++)
                 {
-                    byte pixels = reader.ReadByte();
-                    Image.SetPixel(x, y, Palette[pixels & 0x0F]);
-                    Image.SetPixel(x + 1, y, Palette[pixels >> 4]);
+                    for (int x = 0; x < Width; x += 2)
+                    {
+                        byte pixels = reader.ReadByte();
+                        Image.SetPixel(x, y, Palette[pixels & 0x0F]);
+                        Image.SetPixel(x + 1, y, Palette[pixels >> 4]);
+                    }
                 }
             }
         }
@@ -102,10 +130,32 @@ namespace Tharsis
         {
             Palette = ConvertPalette(reader, 256);
 
-            Image = new Bitmap(Width, Height);
-            for (int y = 0; y < Height; y++)
-                for (int x = 0; x < Width; x++)
-                    Image.SetPixel(x, y, Palette[reader.ReadByte()]);
+            if (Program.ConvertTMXIndexed)
+            {
+                Image = new Bitmap(Width, Height, PixelFormat.Format8bppIndexed);
+
+                int dataSize = (Width * Height);
+
+                ColorPalette imagePalette = Image.Palette;
+                Array.Copy(Palette, imagePalette.Entries, Palette.Length);
+                Image.Palette = imagePalette;
+
+                bmpData = Image.LockBits(new Rectangle(0, 0, Image.Width, Image.Height), ImageLockMode.ReadWrite, Image.PixelFormat);
+                pixelData = new byte[bmpData.Height * bmpData.Stride];
+                Marshal.Copy(bmpData.Scan0, pixelData, 0, pixelData.Length);
+
+                Buffer.BlockCopy(reader.ReadBytes(dataSize), 0, pixelData, 0, dataSize);
+
+                Marshal.Copy(pixelData, 0, bmpData.Scan0, pixelData.Length);
+                Image.UnlockBits(bmpData);
+            }
+            else
+            {
+                Image = new Bitmap(Width, Height);
+                for (int y = 0; y < Height; y++)
+                    for (int x = 0; x < Width; x++)
+                        Image.SetPixel(x, y, Palette[reader.ReadByte()]);
+            }
         }
 
         public override bool Save(string path)
