@@ -16,6 +16,8 @@ namespace Tharsis
     [FileExtensions(".tmx", ".png")]
     public class TMX : BaseFile
     {
+        public const string ExpectedMagic = "TMX0";
+
         public uint Unknown1 { get; private set; }
         public uint FileSize { get; private set; }
         public string MagicNumber { get; private set; }
@@ -39,6 +41,19 @@ namespace Tharsis
 
         protected override void Parse(BinaryReader reader)
         {
+            reader.BaseStream.Seek(0x08, SeekOrigin.Begin);
+
+            if (Encoding.ASCII.GetString(reader.ReadBytes(4), 0, 4) != ExpectedMagic)
+            {
+                long result = reader.FindString(ExpectedMagic);
+                if (result != -1)
+                    reader.BaseStream.Seek(result - 8, SeekOrigin.Begin);
+                else
+                    throw new Exception("File could not be recognized as TMX");
+            }
+            else
+                reader.BaseStream.Seek(0, SeekOrigin.Begin);
+
             Unknown1 = reader.ReadUInt32();
             FileSize = reader.ReadUInt32();
             MagicNumber = Encoding.ASCII.GetString(reader.ReadBytes(4), 0, 4);

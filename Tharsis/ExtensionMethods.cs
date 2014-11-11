@@ -96,5 +96,22 @@ namespace Tharsis
 
             return result;
         }
+
+        public static long FindString(this BinaryReader reader, string str, long startOffset = 0)
+        {
+            long oldPosition = reader.BaseStream.Position;
+            long result = -1;
+
+            reader.BaseStream.Seek(startOffset, SeekOrigin.Begin);
+            while (result == -1 && reader.BaseStream.Position < reader.BaseStream.Length)
+            {
+                string checkStr = Encoding.ASCII.GetString(reader.ReadBytes(str.Length));
+                if (checkStr == str) result = reader.BaseStream.Position - str.Length;
+            }
+
+            reader.BaseStream.Position = oldPosition;
+
+            return result;
+        }
     }
 }
