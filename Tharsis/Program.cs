@@ -26,6 +26,7 @@ namespace Tharsis
         static PathType inputType;
         static string inputFilter;
         static string outputPath;
+        static int successCounter, failureCounter;
 
         public static bool NoDeepScan = true;
         public static bool KeepExistingFiles = false;
@@ -54,6 +55,8 @@ namespace Tharsis
                 .Where(x => x.BaseType == typeof(BaseFile) && x.GetCustomAttributes(typeof(FileExtensionsAttribute), false).Length != 0)
                 .OrderBy(x => x.Name)
                 .ToList();
+
+            successCounter = failureCounter = 0;
 
             if ((inputType & PathType.FileFound) != 0)
             {
@@ -85,9 +88,15 @@ namespace Tharsis
 
                     BaseFile instance = (Activator.CreateInstance(fileType, new object[] { InputPath }) as BaseFile);
                     if (instance.Save(outputPath))
+                    {
                         Console.WriteLine("done.");
+                        successCounter++;
+                    }
                     else
+                    {
                         Console.WriteLine("failed!");
+                        failureCounter++;
+                    }
                 }
                 Console.WriteLine();
             }
@@ -124,9 +133,15 @@ namespace Tharsis
 
                                 BaseFile instance = (Activator.CreateInstance(type, new object[] { file }) as BaseFile);
                                 if (instance.Save(outputFile))
+                                {
                                     Console.WriteLine("done.");
+                                    successCounter++;
+                                }
                                 else
+                                {
                                     Console.WriteLine("failed!");
+                                    failureCounter++;
+                                }
                             }
                         }
                     }
@@ -136,6 +151,9 @@ namespace Tharsis
                     Console.WriteLine();
                 }
             }
+
+            Console.WriteLine("{0} file(s) converted, {1} file(s) failed.", successCounter, failureCounter);
+            Console.WriteLine();
 
             Console.WriteLine("Done, press any key to exit!");
             Console.ReadKey();
