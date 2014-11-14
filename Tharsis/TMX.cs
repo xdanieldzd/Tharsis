@@ -41,8 +41,8 @@ namespace Tharsis
 
         protected override void Parse(BinaryReader reader)
         {
+            /* Check for TMX0 magic word; try searching for it if not found at expected address */
             reader.BaseStream.Seek(0x08, SeekOrigin.Begin);
-
             if (Encoding.ASCII.GetString(reader.ReadBytes(4), 0, 4) != ExpectedMagic)
             {
                 long result = reader.FindString(ExpectedMagic);
@@ -54,6 +54,7 @@ namespace Tharsis
             else
                 reader.BaseStream.Seek(0, SeekOrigin.Begin);
 
+            /* Read TMX0 header */
             Unknown1 = reader.ReadUInt32();
             FileSize = reader.ReadUInt32();
             MagicNumber = Encoding.ASCII.GetString(reader.ReadBytes(4), 0, 4);
@@ -66,6 +67,7 @@ namespace Tharsis
             Unknown6 = reader.ReadUInt32();
             Unknown0x20 = reader.ReadBytes(32);
 
+            /* Convert image according to color depth */
             switch (ColorDepth)
             {
                 case 0x13: Convert8bpp(reader); break;
@@ -76,9 +78,8 @@ namespace Tharsis
 
         private Color[] ConvertPalette(BinaryReader reader, int colorCount)
         {
-            Color[] newPalette = new Color[colorCount];
+            /* Read palette to temporary array, scale alpha while doing so */
             Color[] tempPalette = new Color[colorCount];
-
             for (int i = 0; i < tempPalette.Length; i++)
             {
                 uint color = reader.ReadUInt32();
@@ -86,6 +87,8 @@ namespace Tharsis
                 tempPalette[i] = Color.FromArgb(alpha, (byte)(color & 0xFF), (byte)(color >> 8), (byte)(color >> 16));
             }
 
+            /* Create output array; "descramble" palette if needed (8bpp) */
+            Color[] newPalette = new Color[colorCount];
             if (colorCount == 256)
             {
                 for (int i = 0; i < newPalette.Length; i += 32)
@@ -102,6 +105,26 @@ namespace Tharsis
             return newPalette;
         }
 
+        private void SetupIndexedBitmap()
+        {
+            /* Copy palette to image */
+            ColorPalette imagePalette = Image.Palette;
+            Array.Copy(Palette, imagePalette.Entries, Palette.Length);
+            Image.Palette = imagePalette;
+
+            /* Lock bitmap, prepare byte array for writing */
+            bmpData = Image.LockBits(new Rectangle(0, 0, Image.Width, Image.Height), ImageLockMode.ReadWrite, Image.PixelFormat);
+            pixelData = new byte[bmpData.Height * bmpData.Stride];
+            Marshal.Copy(bmpData.Scan0, pixelData, 0, pixelData.Length);
+        }
+
+        private void FinalizeIndexed()
+        {
+            /* Copy array back, then unlock bitmap */
+            Marshal.Copy(pixelData, 0, bmpData.Scan0, pixelData.Length);
+            Image.UnlockBits(bmpData);
+        }
+
         private void Convert4bpp(BinaryReader reader)
         {
             Palette = ConvertPalette(reader, 16);
@@ -110,21 +133,14 @@ namespace Tharsis
             {
                 Image = new Bitmap(Width, Height, PixelFormat.Format4bppIndexed);
 
+                SetupIndexedBitmap();
+
                 int dataSize = (Width * Height) / 2;
-
-                ColorPalette imagePalette = Image.Palette;
-                Array.Copy(Palette, imagePalette.Entries, Palette.Length);
-                Image.Palette = imagePalette;
-
-                bmpData = Image.LockBits(new Rectangle(0, 0, Image.Width, Image.Height), ImageLockMode.ReadWrite, Image.PixelFormat);
-                pixelData = new byte[bmpData.Height * bmpData.Stride];
-                Marshal.Copy(bmpData.Scan0, pixelData, 0, pixelData.Length);
-
                 Buffer.BlockCopy(reader.ReadBytes(dataSize), 0, pixelData, 0, dataSize);
+                /* Swap nibbles */
                 for (int i = 0; i < pixelData.Length; i++) pixelData[i] = (byte)((pixelData[i] >> 4) | (pixelData[i] << 4));
 
-                Marshal.Copy(pixelData, 0, bmpData.Scan0, pixelData.Length);
-                Image.UnlockBits(bmpData);
+                FinalizeIndexed();
             }
             else
             {
@@ -149,20 +165,12 @@ namespace Tharsis
             {
                 Image = new Bitmap(Width, Height, PixelFormat.Format8bppIndexed);
 
+                SetupIndexedBitmap();
+
                 int dataSize = (Width * Height);
-
-                ColorPalette imagePalette = Image.Palette;
-                Array.Copy(Palette, imagePalette.Entries, Palette.Length);
-                Image.Palette = imagePalette;
-
-                bmpData = Image.LockBits(new Rectangle(0, 0, Image.Width, Image.Height), ImageLockMode.ReadWrite, Image.PixelFormat);
-                pixelData = new byte[bmpData.Height * bmpData.Stride];
-                Marshal.Copy(bmpData.Scan0, pixelData, 0, pixelData.Length);
-
                 Buffer.BlockCopy(reader.ReadBytes(dataSize), 0, pixelData, 0, dataSize);
 
-                Marshal.Copy(pixelData, 0, bmpData.Scan0, pixelData.Length);
-                Image.UnlockBits(bmpData);
+                FinalizeIndexed();
             }
             else
             {
