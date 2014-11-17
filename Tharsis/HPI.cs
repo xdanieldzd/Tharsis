@@ -51,13 +51,6 @@ namespace Tharsis
             if (!File.Exists(HPBPath)) throw new FileNotFoundException(string.Format("HPB binary for {0} not found", Path.GetFileName(FilePath)));
         }
 
-        private string GetString(BinaryReader reader, Encoding encoding)
-        {
-            List<byte> bytes = new List<byte>();
-            while (bytes.Count == 0 || bytes.Last() != 0) bytes.Add(reader.ReadByte());
-            return Encoding.GetEncoding(932).GetString(bytes.ToArray()).TrimEnd('\0');
-        }
-
         public override bool Save(string path)
         {
             string outputPath = Path.Combine(Path.GetDirectoryName(path), Path.GetFileNameWithoutExtension(path));
@@ -70,7 +63,7 @@ namespace Tharsis
                     for (int i = 0; i < NumFileEntries; i++)
                     {
                         filenameReader.BaseStream.Seek(FileEntries[i].FilenameOffset, SeekOrigin.Begin);
-                        string filePath = GetString(filenameReader, Encoding.GetEncoding(932));
+                        string filePath = filenameReader.GetTerminatedString(Encoding.GetEncoding(932));
 
                         if (FileEntries[i].FileOffset >= hpbReader.BaseStream.Length || FileEntries[i].FileSize == 0)
                         {

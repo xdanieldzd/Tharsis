@@ -113,5 +113,12 @@ namespace Tharsis
 
             return result;
         }
+
+        public static string GetTerminatedString(this BinaryReader reader, Encoding encoding)
+        {
+            List<byte> bytes = new List<byte>();
+            while (bytes.Count == 0 || bytes.Last() != 0) bytes.Add(reader.ReadByte());
+            return encoding.GetString(bytes.ToArray()).TrimEnd('\0');
+        }
     }
 }
