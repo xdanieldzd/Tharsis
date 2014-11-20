@@ -25,11 +25,11 @@ namespace Tharsis
             RGB565 = 0x83636754,
             LA4 = 0x67606758,
             LA8 = 0x14016758,
-
-            /* Unimplemented & unverified */
-            L8 = 0x14016756,
+            L8 = 0x14016756, /* Not yet verified but -assumed- correct */
             A8 = 0x14016757,
-            Unknown = 0x67616757 /* Assumed LA4 but isn't...? */
+
+            /* Something 4bit; also not verified, no files w/ non-zero image data available atm... ALSO needs rewrite to support formats w/ <1byte per pixel */
+            Unknown4 = 0x67616757
         };
 
         Dictionary<Formats, byte> bytesPerPixel = new Dictionary<Formats, byte>()
@@ -42,7 +42,9 @@ namespace Tharsis
             { Formats.RGB565, 2 },
             { Formats.RGBA4, 2 },
             { Formats.LA8, 2 },
-            { Formats.LA4, 1 }
+            { Formats.LA4, 1 },
+            { Formats.L8, 1 },
+            { Formats.A8, 1 },
         };
 
         static readonly int[] Convert5To8 =
@@ -251,6 +253,23 @@ namespace Tharsis
                     val = bytes[0];
                     red = green = blue = (((val >> 4) << 4) & 0xFF);
                     alpha = (((val & 0xF) << 4) & 0xFF);
+                    break;
+
+                case Formats.L8:
+                    alpha = 0xFF;
+                    red = green = blue = bytes[0];
+                    break;
+
+                case Formats.A8:
+                    alpha = bytes[0];
+                    red = green = blue = 0xFF;
+                    break;
+
+                case Formats.Unknown4:
+                    /* Temp, not yet working & probably wrong */
+                    val = bytes[0];
+                    red = green = blue = (((val >> 4) << 4) & 0xFF);
+                    red = green = blue = (((val & 0xF) << 4) & 0xFF);
                     break;
             }
 
