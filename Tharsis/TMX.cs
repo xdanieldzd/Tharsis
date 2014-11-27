@@ -13,22 +13,51 @@ namespace Tharsis
     /* http://forums.pcsx2.net/Thread-TMX-file-format-in-Persona-3-4 */
     /* http://forum.xentax.com/viewtopic.php?f=18&t=2922&start=0 */
 
+    [Flags]
+    public enum TMXWrapMode
+    {
+        HorizontalRepeat = 0x0000,
+        VerticalRepeat = 0x0000,
+        HorizontalClamp = 0x0100,
+        VerticalClamp = 0x0400,
+    }
+
+    public enum TMXPixelFormat
+    {
+        PSMCT32 = 0x00,
+        PSMCT24 = 0x01,
+        PSMCT16 = 0x02,
+        PSMCT16S = 0x0A,
+        PSMT8 = 0x13,
+        PSMT4 = 0x14,
+        PSMT8H = 0x1B,
+        PSMT4HL = 0x24,
+        PSMT4HH = 0x2C
+    }
+
     [FileExtensions(".tmx", ".png")]
     public class TMX : BaseFile
     {
         public const string ExpectedMagic = "TMX0";
 
-        public uint Unknown1 { get; private set; }
+        public ushort Unknown1 { get; private set; }
+        public ushort ID { get; private set; }
         public uint FileSize { get; private set; }
         public string MagicNumber { get; private set; }
         public uint Unknown2 { get; private set; }
-        public ushort Unknown3 { get; private set; }
+        public byte Unknown3 { get; private set; }
+        public TMXPixelFormat PaletteFormat { get; private set; }
         public ushort Width { get; private set; }
         public ushort Height { get; private set; }
-        public ushort ColorDepth { get; private set; }
-        public uint Unknown5 { get; private set; }
-        public uint Unknown6 { get; private set; }
-        public byte[] Unknown0x20 { get; private set; }
+        public TMXPixelFormat PixelFormat { get; private set; }
+        public byte MipmapCount { get; private set; }
+        public byte MipmapKValue { get; private set; }
+        public byte MipmapLValue { get; private set; }
+        public ushort Unknown4 { get; private set; }
+        public TMXWrapMode TextureWrap { get; private set; }
+        public uint TextureID { get; private set; }
+        public uint CLUTID { get; private set; }
+        public string Comment { get; private set; }
         public Color[] Palette { get; private set; }
         public byte[] PixelData { get; private set; }
 
@@ -55,24 +84,30 @@ namespace Tharsis
                 reader.BaseStream.Seek(0, SeekOrigin.Begin);
 
             /* Read TMX0 header */
-            Unknown1 = reader.ReadUInt32();
+            Unknown1 = reader.ReadUInt16();
+            ID = reader.ReadUInt16();
             FileSize = reader.ReadUInt32();
             MagicNumber = Encoding.ASCII.GetString(reader.ReadBytes(4), 0, 4);
             Unknown2 = reader.ReadUInt32();
-            Unknown3 = reader.ReadUInt16();
+            Unknown3 = reader.ReadByte();
+            PaletteFormat = (TMXPixelFormat)reader.ReadByte();
             Width = reader.ReadUInt16();
             Height = reader.ReadUInt16();
-            ColorDepth = reader.ReadUInt16();
-            Unknown5 = reader.ReadUInt32();
-            Unknown6 = reader.ReadUInt32();
-            Unknown0x20 = reader.ReadBytes(32);
+            PixelFormat = (TMXPixelFormat)reader.ReadByte();
+            MipmapCount = reader.ReadByte();
+            MipmapKValue = reader.ReadByte();
+            MipmapLValue = reader.ReadByte();
+            TextureWrap = (TMXWrapMode)reader.ReadUInt16();
+            TextureID = reader.ReadUInt32();
+            CLUTID = reader.ReadUInt32();
+            Comment = Encoding.ASCII.GetString(reader.ReadBytes(0x1C), 0, 0x1C);
 
             /* Convert image according to color depth */
-            switch (ColorDepth)
+            switch (PixelFormat)
             {
-                case 0x13: Convert8bpp(reader); break;
-                case 0x14: Convert4bpp(reader); break;
-                default: throw new Exception(string.Format("Unrecognized color depth 0x{0:X2}", ColorDepth));
+                case TMXPixelFormat.PSMT8: Convert8bpp(reader); break;
+                case TMXPixelFormat.PSMT4: Convert4bpp(reader); break;
+                default: throw new Exception(string.Format("Unrecognized pixel format {0}", PixelFormat));
             }
         }
 
@@ -82,9 +117,25 @@ namespace Tharsis
             Color[] tempPalette = new Color[colorCount];
             for (int i = 0; i < tempPalette.Length; i++)
             {
-                uint color = reader.ReadUInt32();
-                byte alpha = (byte)Math.Min((255.0f * ((byte)(color >> 24) / 128.0f)), 0xFF);
-                tempPalette[i] = Color.FromArgb(alpha, (byte)(color & 0xFF), (byte)(color >> 8), (byte)(color >> 16));
+                byte r, g, b, a;
+                if (PaletteFormat == TMXPixelFormat.PSMCT32)
+                {
+                    uint color = reader.ReadUInt32();
+                    r = (byte)color;
+                    g = (byte)(color >> 8);
+                    b = (byte)(color >> 16);
+                    a = (byte)(color >> 24);
+                }
+                else
+                {
+                    ushort color = reader.ReadUInt16();
+                    r = (byte)((color & 0x001F) << 3);
+                    g = (byte)(((color & 0x03E0) >> 5) << 3);
+                    b = (byte)(((color & 0x7C00) >> 10) << 3);
+                    a = (byte)(i == 0 ? 0 : 0xFF);
+                }
+                a = (byte)Math.Min((255.0f * (a / 128.0f)), 0xFF);
+                tempPalette[i] = Color.FromArgb(a, r, g, b);
             }
 
             /* Create output array; "descramble" palette if needed (8bpp) */
@@ -131,7 +182,7 @@ namespace Tharsis
 
             if (Program.ConvertTMXIndexed)
             {
-                Image = new Bitmap(Width, Height, PixelFormat.Format4bppIndexed);
+                Image = new Bitmap(Width, Height, System.Drawing.Imaging.PixelFormat.Format4bppIndexed);
 
                 SetupIndexedBitmap();
 
@@ -163,7 +214,7 @@ namespace Tharsis
 
             if (Program.ConvertTMXIndexed)
             {
-                Image = new Bitmap(Width, Height, PixelFormat.Format8bppIndexed);
+                Image = new Bitmap(Width, Height, System.Drawing.Imaging.PixelFormat.Format8bppIndexed);
 
                 SetupIndexedBitmap();
 
