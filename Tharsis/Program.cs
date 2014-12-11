@@ -5,6 +5,7 @@ using System.Text;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Diagnostics;
 
 namespace Tharsis
 {
@@ -57,6 +58,9 @@ namespace Tharsis
                 .ToList();
 
             successCounter = failureCounter = 0;
+
+            Stopwatch timeTaken = new Stopwatch();
+            timeTaken.Start();
 
             if ((inputType & PathType.FileFound) != 0)
             {
@@ -152,7 +156,10 @@ namespace Tharsis
                 }
             }
 
-            Console.WriteLine("{0} file(s) converted, {1} file(s) failed.", successCounter, failureCounter);
+            timeTaken.Stop();
+
+            Console.WriteLine("Converted {0} file{1}, conversion failed on {2} file{3}.", successCounter, (successCounter == 1 ? string.Empty : "s"), failureCounter, (failureCounter == 1 ? string.Empty : "s"));
+            Console.WriteLine("Processing finished after {0}.", timeTaken.Elapsed.ToReadableString());
             Console.WriteLine();
 
             Console.WriteLine("Done, press any key to exit!");

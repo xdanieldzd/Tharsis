@@ -5,6 +5,7 @@ using System.Text;
 using System.IO;
 using System.Drawing;
 using System.Runtime.InteropServices;
+using System.Drawing.Imaging;
 
 namespace Tharsis
 {
@@ -97,9 +98,16 @@ namespace Tharsis
                 DecodeETC1(reader);
             else
             {
+                BitmapData bmpData = Image.LockBits(new Rectangle(0, 0, Image.Width, Image.Height), ImageLockMode.ReadWrite, Image.PixelFormat);
+                byte[] pixelData = new byte[bmpData.Height * bmpData.Stride];
+                Marshal.Copy(bmpData.Scan0, pixelData, 0, pixelData.Length);
+
                 for (int y = 0; y < Height; y += 8)
                     for (int x = 0; x < Width; x += 8)
-                        DecodeTile(8, 8, x, y, Image, reader, Format);
+                        DecodeTile(8, 8, x, y, ref pixelData, bmpData.Stride, reader, Format);
+
+                Marshal.Copy(pixelData, 0, bmpData.Scan0, pixelData.Length);
+                Image.UnlockBits(bmpData);
             }
         }
 
@@ -176,18 +184,20 @@ namespace Tharsis
                 }
 
                 /* Finally create texture bitmap from decompressed/unscrambled data */
-                byte[] tmp = new byte[finalized.Length];
-                Buffer.BlockCopy(finalized, 0, tmp, 0, tmp.Length);
+                BitmapData bmpData = Image.LockBits(new Rectangle(0, 0, Image.Width, Image.Height), ImageLockMode.ReadWrite, Image.PixelFormat);
+                byte[] pixelData = new byte[bmpData.Height * bmpData.Stride];
+                Marshal.Copy(bmpData.Scan0, pixelData, 0, pixelData.Length);
 
-                int k = 0;
-                for (int y = 0; y < marshalHeight; y++)
+                Buffer.BlockCopy(finalized, 0, pixelData, 0, pixelData.Length);
+                for (int i = 0; i < pixelData.Length; i += 4)
                 {
-                    for (int x = 0; x < marshalWidth; x++)
-                    {
-                        Image.SetPixel(x, y, Color.FromArgb(tmp[k + 3], tmp[k + 0], tmp[k + 1], tmp[k + 2]));
-                        k += bytesPerPixel[Format];
-                    }
+                    byte tmp = pixelData[i];
+                    pixelData[i] = pixelData[i + 2];
+                    pixelData[i + 2] = tmp;
                 }
+
+                Marshal.Copy(pixelData, 0, bmpData.Scan0, pixelData.Length);
+                Image.UnlockBits(bmpData);
             }
             catch (System.IndexOutOfRangeException)
             {
@@ -199,10 +209,11 @@ namespace Tharsis
             }
         }
 
-        private Color DecodeColor(byte[] bytes, Formats format)
+        private void DecodeColor(byte[] bytes, Formats format, out int alpha, out int red, out int green, out int blue)
         {
             int val = -1;
-            int alpha = 255, red = 255, green = 255, blue = 255;
+
+            alpha = red = green = blue = 0xFF;
 
             switch (format)
             {
@@ -272,22 +283,27 @@ namespace Tharsis
                     red = green = blue = (((val & 0xF) << 4) & 0xFF);
                     break;
             }
-
-            return Color.FromArgb(alpha, red, green, blue);
         }
 
-        private void DecodeTile(int iconSize, int tileSize, int ax, int ay, Bitmap image, BinaryReader reader, Formats format)
+        private void DecodeTile(int iconSize, int tileSize, int ax, int ay, ref byte[] pixelData, int stride, BinaryReader reader, Formats format)
         {
             if (tileSize == 0)
             {
                 byte[] bytes = new byte[bytesPerPixel[format]];
                 Buffer.BlockCopy(reader.ReadBytes(bytes.Length), 0, bytes, 0, bytes.Length);
-                image.SetPixel(ax, ay, DecodeColor(bytes, format));
+
+                int alpha, red, green, blue;
+                DecodeColor(bytes, format, out alpha, out red, out green, out blue);
+
+                pixelData[(ay * stride) + (ax * (stride / Width)) + 2] = (byte)red;
+                pixelData[(ay * stride) + (ax * (stride / Width)) + 1] = (byte)green;
+                pixelData[(ay * stride) + (ax * (stride / Width))] = (byte)blue;
+                pixelData[(ay * stride) + (ax * (stride / Width)) + 3] = (byte)alpha;
             }
             else
                 for (var y = 0; y < iconSize; y += tileSize)
                     for (var x = 0; x < iconSize; x += tileSize)
-                        DecodeTile(tileSize, tileSize / 2, x + ax, y + ay, image, reader, format);
+                        DecodeTile(tileSize, tileSize / 2, x + ax, y + ay, ref pixelData, stride, reader, format);
         }
 
         public override bool Save(string path)
