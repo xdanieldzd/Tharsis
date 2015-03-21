@@ -40,7 +40,7 @@ namespace Tharsis
             Console.Title = Path.GetFileName(ApplicationPath);
 
             StringBuilder headerString = new StringBuilder();
-            headerString.AppendFormat("Tharsis {0}.{1} - Etrian Odyssey IV File Converter\n", ApplicationVersion.Major, ApplicationVersion.Minor);
+            headerString.AppendFormat("Tharsis {0}.{1} - Generic Game File Converter\n", ApplicationVersion.Major, ApplicationVersion.Minor);
             headerString.Append("Written 2014 by xdaniel - http://magicstone.de/dzd/\n");
             headerString.Append("ETC1 support based on rg_etc1 by Rich Geldreich");
 

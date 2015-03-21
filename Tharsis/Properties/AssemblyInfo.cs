@@ -6,11 +6,11 @@ using System.Runtime.InteropServices;
 // Attribute gesteuert. Ändern Sie diese Attributwerte, um die Informationen zu ändern,
 // die mit einer Assembly verknüpft sind.
 [assembly: AssemblyTitle("Tharsis")]
-[assembly: AssemblyDescription("Generic Etrian Odyssey 4 Tool")]
+[assembly: AssemblyDescription("Generic game file format converter")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("Tharsis")]
-[assembly: AssemblyCopyright("Written 2014 by xdaniel")]
+[assembly: AssemblyCopyright("Written 2014/2015 by xdaniel")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
