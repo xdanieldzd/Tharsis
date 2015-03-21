@@ -46,6 +46,8 @@
   <ItemGroup>
     <Compile Include="ArgsHandling.cs" />
     <Compile Include="BaseFile.cs" />
+    <Compile Include="TextureCommons.cs" />
+    <Compile Include="CTXB.cs" />
     <Compile Include="EO4String.cs" />
     <Compile Include="ExtensionMethods.cs" />
     <Compile Include="FileExtensionsAttribute.cs" />

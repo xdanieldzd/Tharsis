@@ -16,6 +16,7 @@ namespace Tharsis
         {
             using (MemoryStream stream = new MemoryStream(File.ReadAllBytes(this.FilePath = path)))
             {
+                if (stream.Length == 0) return;
                 Parse(new BinaryReader(stream));
             }
         }
