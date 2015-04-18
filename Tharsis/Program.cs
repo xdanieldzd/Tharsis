@@ -17,6 +17,9 @@ namespace Tharsis
         [DllImport("kernel32", CharSet = CharSet.Ansi, ExactSpelling = true, SetLastError = true)]
         static extern UIntPtr GetProcAddress(IntPtr hModule, string procName);
 
+        [DllImport("kernel32.dll", SetLastError = true)]
+        static extern bool FreeLibrary(IntPtr hModule);
+
         public static List<Switch> Switches { get; private set; }
 
         public static string ApplicationPath { get; private set; }
@@ -185,17 +188,36 @@ namespace Tharsis
         private static void VerifyETC1Library()
         {
             string etc1LibraryPath = Path.Combine(Path.GetDirectoryName(ApplicationPath), "ETC1Lib.dll");
+
             if (!File.Exists(etc1LibraryPath))
             {
-                Console.WriteLine("Error: 'ETC1Lib.dll' not found!");
+                Console.WriteLine("Error: Library 'ETC1Lib.dll' not found!");
                 Console.WriteLine();
                 WaitForExit(-2);
             }
-            else if (GetProcAddress(LoadLibrary(etc1LibraryPath), "ConvertETC1") == UIntPtr.Zero)
+            else
             {
-                Console.WriteLine("Error: Invalid 'ETC1Lib.dll' detected!");
-                Console.WriteLine();
-                WaitForExit(-2);
+                IntPtr etc1LibraryHandle = LoadLibrary(etc1LibraryPath);
+
+                if (etc1LibraryHandle == IntPtr.Zero)
+                {
+                    Console.WriteLine("Error: Could not load library 'ETC1Lib.dll'!");
+                    Console.WriteLine();
+                    WaitForExit(-2);
+                }
+                else if (GetProcAddress(etc1LibraryHandle, "ConvertETC1") == UIntPtr.Zero)
+                {
+                    Console.WriteLine("Error: Invalid 'ETC1Lib.dll' library detected!");
+                    Console.WriteLine();
+                    WaitForExit(-2);
+                }
+
+                if (!FreeLibrary(etc1LibraryHandle))
+                {
+                    Console.WriteLine("Error: Could not unload library 'ETC1Lib.dll'!");
+                    Console.WriteLine();
+                    WaitForExit(-2);
+                }
             }
         }
 
