@@ -10,43 +10,52 @@ namespace Tharsis
     [FileExtensions(".mbm", ".txt")]
     public class MBM : BaseFile
     {
-        public uint Unknown1 { get; private set; }
+        public uint MaybeAlwaysZero { get; private set; }       /* Always zero? */
         public string MagicNumber { get; private set; }
-        public uint Unknown2 { get; private set; }
-        public uint Unknown3 { get; private set; }
+        public uint MaybeAlways65536 { get; private set; }      /* Always 0x00010000? */
+        public uint FileSize { get; private set; }              /* NOTE: Not always correct! Not used & messed up during localization? */
         public uint NumEntries { get; private set; }
         public uint EntryOffset { get; private set; }
 
         public List<Entry> Entries { get; private set; }
 
+        public uint ActualFileSize { get; private set; }
+
         public MBM(string path) : base(path) { }
 
         protected override void Parse(BinaryReader reader)
         {
-            Unknown1 = reader.ReadUInt32();
+            MaybeAlwaysZero = reader.ReadUInt32();
             MagicNumber = Encoding.ASCII.GetString(reader.ReadBytes(4), 0, 4);
-            Unknown2 = reader.ReadUInt32();
-            Unknown3 = reader.ReadUInt32();
+            MaybeAlways65536 = reader.ReadUInt32();
+            FileSize = reader.ReadUInt32();
             NumEntries = reader.ReadUInt32();
             EntryOffset = reader.ReadUInt32();
+
+            if (MaybeAlwaysZero != 0 || MaybeAlways65536 != 0x00010000) return;
 
             reader.BaseStream.Seek(EntryOffset, SeekOrigin.Begin);
 
             Entries = new List<Entry>();
             while (Entries.Count < NumEntries) Entries.Add(new Entry(reader));
+
+            ActualFileSize = (uint)reader.BaseStream.Length;
         }
 
         public override bool Save(string path)
         {
+            if (Entries == null) return false;
+
             using (StreamWriter writer = new StreamWriter(path, false))
             {
                 string fileString = string.Format("File: {0}", FilePath.Replace(Program.InputPath, ""));
                 writer.WriteLine(fileString.StyleLine(LineType.Underline));
                 writer.WriteLine();
-                writer.WriteLine("Unknown 1: 0x{0:X8}", Unknown1);
+                writer.WriteLine("Unknown 1 (always zero?): 0x{0:X8}", MaybeAlwaysZero);
                 writer.WriteLine("Magic number: {0}", MagicNumber);
-                writer.WriteLine("Unknown 2: 0x{0:X8}", Unknown2);
-                writer.WriteLine("Unknown 3: 0x{0:X8}", Unknown3);
+                writer.WriteLine("Unknown 2 (always 0x10000?): 0x{0:X}", MaybeAlways65536);
+                writer.WriteLine("File size (bytes): 0x{0:X}", FileSize);
+                writer.WriteLine("- Actual size (bytes): 0x{0:X}", ActualFileSize);
                 writer.WriteLine("Number of entries: {0}", NumEntries);
                 writer.WriteLine("Entry offset: 0x{0:X8}", EntryOffset);
                 writer.WriteLine();
@@ -62,7 +71,7 @@ namespace Tharsis
                     else
                     {
                         writer.WriteLine("ID: 0x{0:X8}", entry.ID);
-                        writer.WriteLine("Length (bytes): 0x{0:X8}", entry.NumBytes);
+                        writer.WriteLine("Length (bytes): 0x{0:X}", entry.NumBytes);
                         writer.WriteLine("String offset: 0x{0:X8}", entry.StringOffset);
                         writer.WriteLine("Padding: 0x{0:X8}", entry.Padding);
                         writer.WriteLine("String:");
