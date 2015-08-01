@@ -36,8 +36,14 @@ namespace Tharsis
 
             reader.BaseStream.Seek(EntryOffset, SeekOrigin.Begin);
 
+            int validEntries = 0;
             Entries = new List<Entry>();
-            while (Entries.Count < NumEntries) Entries.Add(new Entry(reader));
+            while (validEntries < NumEntries)
+            {
+                Entry newEntry = new Entry(reader);
+                Entries.Add(newEntry);
+                if (newEntry.NumBytes != 0) validEntries++;
+            }
 
             ActualFileSize = (uint)reader.BaseStream.Length;
         }
