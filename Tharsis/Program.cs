@@ -44,7 +44,7 @@ namespace Tharsis
 
             StringBuilder headerString = new StringBuilder();
             headerString.AppendFormat("Tharsis {0}.{1} - Generic Game File Converter\n", ApplicationVersion.Major, ApplicationVersion.Minor);
-            headerString.Append("Written 2014 by xdaniel - http://magicstone.de/dzd/\n");
+            headerString.Append("Written 2014-2016 by xdaniel - http://magicstone.de/dzd/\n");
             headerString.Append("ETC1 support based on rg_etc1 by Rich Geldreich");
 
             Console.WriteLine(headerString.ToString().Center(2).StyleLine(LineType.Overline | LineType.Underline));
@@ -84,8 +84,11 @@ namespace Tharsis
                     }
                 }
 
-                string displayInput = InputPath.Replace(Path.GetDirectoryName(InputPath), "").TrimStart(Path.DirectorySeparatorChar);
-                if (!Directory.Exists(Path.GetDirectoryName(outputPath))) Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
+                string inputFileDirectory = Path.GetDirectoryName(InputPath);
+                string displayInput = (inputFileDirectory != string.Empty ? InputPath.Replace(Path.GetDirectoryName(InputPath), "").TrimStart(Path.DirectorySeparatorChar) : InputPath);
+
+                string outputFileDirectory = Path.GetDirectoryName(outputPath);
+                if (outputFileDirectory != string.Empty && !Directory.Exists(outputFileDirectory)) Directory.CreateDirectory(outputFileDirectory);
 
                 if ((File.Exists(outputPath) && KeepExistingFiles) || fileType == null)
                     Console.WriteLine("Skipping {0}...", displayInput);
