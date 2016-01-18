@@ -66,12 +66,15 @@ namespace Tharsis
 
         public class Texture
         {
+            // "E:\- 3DS OoT-MM Hacking -\romfs-oot3d\" --keep --output "E:\- 3DS OoT-MM Hacking -\ctxb-oot3d\"
+
             public uint DataLength { get; private set; }
             public ushort Unknown04 { get; private set; }
             public ushort Unknown06 { get; private set; }
             public ushort Width { get; private set; }
             public ushort Height { get; private set; }
-            public uint RawFormat { get; private set; }
+            public Images.Pica.PixelFormats PixelFormat { get; private set; }
+            public Images.Pica.DataTypes DataType { get; private set; }
             public uint DataOffset { get; private set; }
             public string Name { get; private set; }
 
@@ -84,17 +87,17 @@ namespace Tharsis
                 Unknown06 = reader.ReadUInt16();
                 Width = reader.ReadUInt16();
                 Height = reader.ReadUInt16();
-                RawFormat = reader.ReadUInt32();
+                PixelFormat = (Images.Pica.PixelFormats)reader.ReadUInt16();
+                DataType = (Images.Pica.DataTypes)reader.ReadUInt16();
                 DataOffset = reader.ReadUInt32();
                 Name = Encoding.ASCII.GetString(reader.ReadBytes(16), 0, 16).TrimEnd('\0');
 
-                TextureCommons.Formats format = TextureCommons.FormatMap[RawFormat];
-                if (!TextureCommons.BytesPerPixel.ContainsKey(format)) return;
-
-                TexImage = new Bitmap(Width, Height);
-
                 reader.BaseStream.Seek(parent.TextureDataOffset + DataOffset, SeekOrigin.Begin);
-                TextureCommons.ConvertImage(format, reader, DataLength, TexImage);
+
+                if (PixelFormat == Images.Pica.PixelFormats.ETC1RGB8NativeDMP || PixelFormat == Images.Pica.PixelFormats.ETC1AlphaRGB8A4NativeDMP)
+                    DataType = Images.Pica.DataTypes.UnsignedByte;
+
+                TexImage = Images.Texture.ToBitmap(DataType, PixelFormat, (int)Width, (int)Height, reader);
             }
         }
     }

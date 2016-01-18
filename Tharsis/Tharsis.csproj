@@ -46,7 +46,10 @@
   <ItemGroup>
     <Compile Include="ArgsHandling.cs" />
     <Compile Include="BaseFile.cs" />
-    <Compile Include="TextureCommons.cs" />
+    <Compile Include="Images\TextureException.cs" />
+    <Compile Include="Images\Pica.cs" />
+    <Compile Include="Images\Texture.cs" />
+    <Compile Include="Images\TileCodecs.cs" />
     <Compile Include="CTXB.cs" />
     <Compile Include="EO4String.cs" />
     <Compile Include="ExtensionMethods.cs" />
@@ -57,11 +60,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="STEX.cs" />
     <Compile Include="TMX.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="ETC1Lib.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

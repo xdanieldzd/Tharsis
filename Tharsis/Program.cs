@@ -11,15 +11,6 @@ namespace Tharsis
 {
     class Program
     {
-        [DllImport("kernel32", SetLastError = true)]
-        static extern IntPtr LoadLibrary(string lpFileName);
-
-        [DllImport("kernel32", CharSet = CharSet.Ansi, ExactSpelling = true, SetLastError = true)]
-        static extern UIntPtr GetProcAddress(IntPtr hModule, string procName);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        static extern bool FreeLibrary(IntPtr hModule);
-
         public static List<Switch> Switches { get; private set; }
 
         public static string ApplicationPath { get; private set; }
@@ -44,13 +35,10 @@ namespace Tharsis
 
             StringBuilder headerString = new StringBuilder();
             headerString.AppendFormat("Tharsis {0}.{1} - Generic Game File Converter\n", ApplicationVersion.Major, ApplicationVersion.Minor);
-            headerString.Append("Written 2014-2016 by xdaniel - http://magicstone.de/dzd/\n");
-            headerString.Append("ETC1 support based on rg_etc1 by Rich Geldreich");
+            headerString.Append("Written 2014-2016 by xdaniel - http://magicstone.de/dzd/");
 
             Console.WriteLine(headerString.ToString().Center(2).StyleLine(LineType.Overline | LineType.Underline));
             Console.WriteLine();
-
-            VerifyETC1Library();
 
             InitializeSwitches();
             VerifyArguments(args.ParseArguments());
@@ -186,42 +174,6 @@ namespace Tharsis
             Console.WriteLine("Press any key to exit.");
             Console.ReadKey();
             Environment.Exit(exitCode);
-        }
-
-        private static void VerifyETC1Library()
-        {
-            string etc1LibraryPath = Path.Combine(Path.GetDirectoryName(ApplicationPath), "ETC1Lib.dll");
-
-            if (!File.Exists(etc1LibraryPath))
-            {
-                Console.WriteLine("Error: Library 'ETC1Lib.dll' not found!");
-                Console.WriteLine();
-                WaitForExit(-2);
-            }
-            else
-            {
-                IntPtr etc1LibraryHandle = LoadLibrary(etc1LibraryPath);
-
-                if (etc1LibraryHandle == IntPtr.Zero)
-                {
-                    Console.WriteLine("Error: Could not load library 'ETC1Lib.dll'!");
-                    Console.WriteLine();
-                    WaitForExit(-2);
-                }
-                else if (GetProcAddress(etc1LibraryHandle, "ConvertETC1") == UIntPtr.Zero)
-                {
-                    Console.WriteLine("Error: Invalid 'ETC1Lib.dll' library detected!");
-                    Console.WriteLine();
-                    WaitForExit(-2);
-                }
-
-                if (!FreeLibrary(etc1LibraryHandle))
-                {
-                    Console.WriteLine("Error: Could not unload library 'ETC1Lib.dll'!");
-                    Console.WriteLine();
-                    WaitForExit(-2);
-                }
-            }
         }
 
         private static void InitializeSwitches()
