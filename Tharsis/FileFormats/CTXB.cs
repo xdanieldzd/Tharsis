@@ -5,7 +5,9 @@ using System.Text;
 using System.IO;
 using System.Drawing;
 
-namespace Tharsis
+using Tharsis.IO;
+
+namespace Tharsis.FileFormats
 {
     [FileExtensions(".ctxb", ".png")]
     public class CTXB : BaseFile

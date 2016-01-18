@@ -7,9 +7,10 @@ using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Drawing.Imaging;
 
+using Tharsis.IO;
 using Tharsis.Images;
 
-namespace Tharsis
+namespace Tharsis.FileFormats
 {
     [FileExtensions(".stex", ".png")]
     public class STEX : BaseFile

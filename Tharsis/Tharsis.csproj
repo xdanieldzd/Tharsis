@@ -45,21 +45,21 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ArgsHandling.cs" />
-    <Compile Include="BaseFile.cs" />
+    <Compile Include="IO\BaseFile.cs" />
     <Compile Include="Images\TextureException.cs" />
     <Compile Include="Images\Pica.cs" />
     <Compile Include="Images\Texture.cs" />
     <Compile Include="Images\TileCodecs.cs" />
-    <Compile Include="CTXB.cs" />
-    <Compile Include="EO4String.cs" />
+    <Compile Include="FileFormats\CTXB.cs" />
+    <Compile Include="IO\EO4String.cs" />
     <Compile Include="ExtensionMethods.cs" />
-    <Compile Include="FileExtensionsAttribute.cs" />
-    <Compile Include="HPI.cs" />
-    <Compile Include="MBM.cs" />
+    <Compile Include="IO\FileExtensionsAttribute.cs" />
+    <Compile Include="FileFormats\HPI.cs" />
+    <Compile Include="FileFormats\MBM.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="STEX.cs" />
-    <Compile Include="TMX.cs" />
+    <Compile Include="FileFormats\STEX.cs" />
+    <Compile Include="FileFormats\TMX.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

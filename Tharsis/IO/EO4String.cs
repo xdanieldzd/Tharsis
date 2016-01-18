@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Tharsis
+namespace Tharsis.IO
 {
     class EO4String : Encoding
     {

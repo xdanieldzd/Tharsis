@@ -5,7 +5,9 @@ using System.Text;
 using System.IO;
 using System.Diagnostics;
 
-namespace Tharsis
+using Tharsis.IO;
+
+namespace Tharsis.FileFormats
 {
     [FileExtensions(".mbm", ".txt")]
     public class MBM : BaseFile

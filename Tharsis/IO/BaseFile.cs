@@ -5,7 +5,7 @@ using System.Text;
 using System.IO;
 using System.Diagnostics;
 
-namespace Tharsis
+namespace Tharsis.IO
 {
     [DebuggerDisplay("{FilePath}")]
     public abstract class BaseFile

@@ -7,7 +7,9 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 
-namespace Tharsis
+using Tharsis.IO;
+
+namespace Tharsis.FileFormats
 {
     /* Better palette conversion based on information from... */
     /* http://forums.pcsx2.net/Thread-TMX-file-format-in-Persona-3-4 */

@@ -7,6 +7,8 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 
+using Tharsis.IO;
+
 namespace Tharsis
 {
     class Program
