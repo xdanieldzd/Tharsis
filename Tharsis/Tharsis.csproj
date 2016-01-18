@@ -45,8 +45,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ArgsHandling.cs" />
+    <Compile Include="FileFormats\FileFormatException.cs" />
     <Compile Include="IO\BaseFile.cs" />
-    <Compile Include="Images\TextureException.cs" />
+    <Compile Include="Images\ImageException.cs" />
     <Compile Include="Images\Pica.cs" />
     <Compile Include="Images\Texture.cs" />
     <Compile Include="Images\TileCodecs.cs" />
@@ -56,6 +57,7 @@
     <Compile Include="IO\FileExtensionsAttribute.cs" />
     <Compile Include="FileFormats\HPI.cs" />
     <Compile Include="FileFormats\MBM.cs" />
+    <Compile Include="IO\IOException.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="FileFormats\STEX.cs" />

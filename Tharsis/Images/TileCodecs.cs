@@ -84,21 +84,21 @@ namespace Tharsis.Images
         private static Codec GetCodec(Pica.DataTypes dataType, Pica.PixelFormats picaPixelFormat)
         {
             Codec codec = codecs.FirstOrDefault(x => x.DataType == dataType && x.PixelFormat == picaPixelFormat);
-            if (codec == null) throw new TextureException(string.Format("Codec not found for {0} {1}", dataType, picaPixelFormat));
+            if (codec == null) throw new ImageException(string.Format("Codec not found for {0} {1}", dataType, picaPixelFormat));
             return codec;
         }
 
         public static TileDecoderDelegate GetDecoder(Pica.DataTypes dataType, Pica.PixelFormats picaPixelFormat)
         {
             Codec codec = GetCodec(dataType, picaPixelFormat);
-            if (codec.Decoder == null) throw new TextureException(string.Format("Decoder not found for {0} {1}", dataType, picaPixelFormat));
+            if (codec.Decoder == null) throw new ImageException(string.Format("Decoder not found for {0} {1}", dataType, picaPixelFormat));
             return codec.Decoder;
         }
 
         public static TileEncoderDelegate GetEncoder(Pica.DataTypes dataType, Pica.PixelFormats picaPixelFormat)
         {
             Codec codec = GetCodec(dataType, picaPixelFormat);
-            if (codec.Encoder == null) throw new TextureException(string.Format("Encoder not found for {0} {1}", dataType, picaPixelFormat));
+            if (codec.Encoder == null) throw new ImageException(string.Format("Encoder not found for {0} {1}", dataType, picaPixelFormat));
             return codec.Encoder;
         }
 

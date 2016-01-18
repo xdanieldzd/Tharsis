@@ -14,7 +14,7 @@ namespace Tharsis.IO
 
         public BaseFile(string path)
         {
-            using (MemoryStream stream = new MemoryStream(File.ReadAllBytes(this.FilePath = path)))
+            using (FileStream stream = new FileStream(this.FilePath = path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             {
                 if (stream.Length == 0) return;
                 Parse(new BinaryReader(stream));
@@ -23,12 +23,12 @@ namespace Tharsis.IO
 
         protected virtual void Parse(BinaryReader reader)
         {
-            throw new Exception(string.Format("Parse not implemented for {0}", this.GetType().FullName));
+            throw new IOException(string.Format("Parse not implemented for {0}", this.GetType().FullName));
         }
 
         public virtual bool Save(string path)
         {
-            throw new Exception(string.Format("Save not implemented for {0}", this.GetType().FullName));
+            throw new IOException(string.Format("Save not implemented for {0}", this.GetType().FullName));
         }
     }
 }

@@ -80,7 +80,7 @@ namespace Tharsis.FileFormats
                 if (result != -1)
                     reader.BaseStream.Seek(result - 8, SeekOrigin.Begin);
                 else
-                    throw new Exception("File could not be recognized as TMX");
+                    throw new FileFormatException("File could not be recognized as TMX");
             }
             else
                 reader.BaseStream.Seek(0, SeekOrigin.Begin);
@@ -109,7 +109,7 @@ namespace Tharsis.FileFormats
             {
                 case TMXPixelFormat.PSMT8: Convert8bpp(reader); break;
                 case TMXPixelFormat.PSMT4: Convert4bpp(reader); break;
-                default: throw new Exception(string.Format("Unrecognized pixel format {0}", PixelFormat));
+                default: throw new FileFormatException(string.Format("Unrecognized pixel format {0}", PixelFormat));
             }
         }
 
