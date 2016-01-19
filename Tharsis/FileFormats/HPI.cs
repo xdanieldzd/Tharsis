@@ -28,10 +28,12 @@ namespace Tharsis.FileFormats
 
         public string HPBPath { get; private set; }
 
-        public HPI(string path) : base(path) { }
+        public HPI(string path, ParseModes mode) : base(path, mode) { }
 
-        protected override void Parse(BinaryReader reader)
+        protected override void Import(Stream sourceStream)
         {
+            BinaryReader reader = new BinaryReader(sourceStream);
+
             MagicNumber = Encoding.ASCII.GetString(reader.ReadBytes(4), 0, 4);
             Unknown1 = reader.ReadUInt32();
             Unknown2 = reader.ReadUInt32();

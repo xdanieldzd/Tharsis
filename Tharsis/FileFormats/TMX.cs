@@ -68,10 +68,12 @@ namespace Tharsis.FileFormats
         BitmapData bmpData;
         byte[] pixelData;
 
-        public TMX(string path) : base(path) { }
+        public TMX(string path, ParseModes mode) : base(path, mode) { }
 
-        protected override void Parse(BinaryReader reader)
+        protected override void Import(Stream sourceStream)
         {
+            BinaryReader reader = new BinaryReader(sourceStream);
+
             /* Check for TMX0 magic word; try searching for it if not found at expected address */
             reader.BaseStream.Seek(0x08, SeekOrigin.Begin);
             if (Encoding.ASCII.GetString(reader.ReadBytes(4), 0, 4) != ExpectedMagic)

@@ -7,23 +7,35 @@ using System.Diagnostics;
 
 namespace Tharsis.IO
 {
+    public enum ParseModes { ImportFormat, ExportFormat }
+
     [DebuggerDisplay("{FilePath}")]
     public abstract class BaseFile
     {
         public string FilePath { get; private set; }
+        public ParseModes ParseMode { get; private set; }
 
-        public BaseFile(string path)
+        public BaseFile(string path, ParseModes mode)
         {
-            using (FileStream stream = new FileStream(this.FilePath = path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (FileStream sourceStream = new FileStream(this.FilePath = path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             {
-                if (stream.Length == 0) return;
-                Parse(new BinaryReader(stream));
+                if (sourceStream.Length == 0) return;
+                switch (this.ParseMode = mode)
+                {
+                    case ParseModes.ImportFormat: Import(sourceStream); break;
+                    case ParseModes.ExportFormat: Export(sourceStream); break;
+                }
             }
         }
 
-        protected virtual void Parse(BinaryReader reader)
+        protected virtual void Import(Stream sourceStream)
         {
-            throw new IOException(string.Format("Parse not implemented for {0}", this.GetType().FullName));
+            throw new IOException(string.Format("Import not implemented for {0}", this.GetType().FullName));
+        }
+
+        protected virtual void Export(Stream sourceStream)
+        {
+            throw new IOException(string.Format("Export not implemented for {0}", this.GetType().FullName));
         }
 
         public virtual bool Save(string path)

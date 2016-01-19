@@ -23,10 +23,12 @@ namespace Tharsis.FileFormats
 
         public uint ActualFileSize { get; private set; }
 
-        public MBM(string path) : base(path) { }
+        public MBM(string path, ParseModes mode) : base(path, mode) { }
 
-        protected override void Parse(BinaryReader reader)
+        protected override void Import(Stream sourceStream)
         {
+            BinaryReader reader = new BinaryReader(sourceStream);
+
             MaybeAlwaysZero = reader.ReadUInt32();
             MagicNumber = Encoding.ASCII.GetString(reader.ReadBytes(4), 0, 4);
             MaybeAlways65536 = reader.ReadUInt32();

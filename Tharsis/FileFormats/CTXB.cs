@@ -12,7 +12,7 @@ namespace Tharsis.FileFormats
     [FileExtensions(".ctxb", ".png")]
     public class CTXB : BaseFile
     {
-        public CTXB(string path) : base(path) { }
+        public CTXB(string path, ParseModes mode) : base(path, mode) { }
 
         /* ctxb */
         public string FileTag { get; private set; }
@@ -28,8 +28,10 @@ namespace Tharsis.FileFormats
         public uint TextureCount { get; private set; }
         public Texture[] Textures { get; private set; }
 
-        protected override void Parse(BinaryReader reader)
+        protected override void Import(Stream sourceStream)
         {
+            BinaryReader reader = new BinaryReader(sourceStream);
+
             FileTag = Encoding.ASCII.GetString(reader.ReadBytes(4), 0, 4);
             FileSize = reader.ReadUInt32();
             NumberOfChunks = reader.ReadUInt32();

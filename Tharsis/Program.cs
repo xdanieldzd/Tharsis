@@ -65,19 +65,35 @@ namespace Tharsis
             {
                 Type fileType = null;
                 string extension = Path.GetExtension(InputPath);
+                ParseModes parseMode;
 
-                foreach (Type type in knownFileTypes)
+                if (ImageOutputType == null)
                 {
-                    FileExtensionsAttribute fileExtAttrib = (type.GetCustomAttributes(typeof(FileExtensionsAttribute), false)[0] as FileExtensionsAttribute);
-                    if (fileExtAttrib.SourceExtension.ToLowerInvariant() == extension.ToLowerInvariant())
+                    parseMode = ParseModes.ImportFormat;
+                    foreach (Type type in knownFileTypes)
                     {
-                        fileType = type;
-                        if (outputPath == null)
-                            outputPath = Path.Combine(Path.GetDirectoryName(InputPath), Path.GetFileName(InputPath) + fileExtAttrib.TargetExtension);
-                        else if (Path.GetFileName(outputPath) == string.Empty)
-                            outputPath = Path.Combine(outputPath, Path.GetFileName(InputPath) + fileExtAttrib.TargetExtension);
-                        break;
+                        FileExtensionsAttribute fileExtAttrib = (type.GetCustomAttributes(typeof(FileExtensionsAttribute), false)[0] as FileExtensionsAttribute);
+                        if (fileExtAttrib.ImportExtension.ToLowerInvariant() == extension.ToLowerInvariant())
+                        {
+                            fileType = type;
+                            if (outputPath == null)
+                                outputPath = Path.Combine(Path.GetDirectoryName(InputPath), Path.GetFileName(InputPath) + fileExtAttrib.ExportExtension);
+                            else if (Path.GetFileName(outputPath) == string.Empty)
+                                outputPath = Path.Combine(outputPath, Path.GetFileName(InputPath) + fileExtAttrib.ExportExtension);
+                            break;
+                        }
                     }
+                }
+                else
+                {
+                    fileType = ImageOutputType;
+                    parseMode = ParseModes.ExportFormat;
+                    FileExtensionsAttribute fileExtAttrib = (fileType.GetCustomAttributes(typeof(FileExtensionsAttribute), false)[0] as FileExtensionsAttribute);
+
+                    if (outputPath == null)
+                        outputPath = Path.Combine(Path.GetDirectoryName(InputPath), Path.GetFileName(InputPath) + fileExtAttrib.ImportExtension);
+                    else if (Path.GetFileName(outputPath) == string.Empty)
+                        outputPath = Path.Combine(outputPath, Path.GetFileName(InputPath) + fileExtAttrib.ImportExtension);
                 }
 
                 string inputFileDirectory = Path.GetDirectoryName(InputPath);
@@ -92,7 +108,7 @@ namespace Tharsis
                 {
                     Console.Write("Converting {0}...", displayInput);
 
-                    BaseFile instance = (Activator.CreateInstance(fileType, new object[] { InputPath }) as BaseFile);
+                    BaseFile instance = (Activator.CreateInstance(fileType, new object[] { InputPath, parseMode }) as BaseFile);
                     if (instance.Save(outputPath))
                     {
                         Console.WriteLine("done.");
@@ -108,54 +124,13 @@ namespace Tharsis
             }
             else if ((inputType & PathType.DirectoryFound) != 0)
             {
-                foreach (Type type in knownFileTypes)
+                if (ImageOutputType == null)
                 {
-                    FileExtensionsAttribute fileExtAttrib = (type.GetCustomAttributes(typeof(FileExtensionsAttribute), false)[0] as FileExtensionsAttribute);
-                    string fileFilter = "*" + fileExtAttrib.SourceExtension;
-
-                    if ((inputType & PathType.ContainsFilter) != 0 && inputFilter != null)
-                    {
-                        if (inputFilter != "*.*" && inputFilter != fileFilter) continue;
-                    }
-
-                    Console.WriteLine(string.Format("Processing {0}s...", type.Name).StyleLine(LineType.Overline | LineType.Underline));
-                    List<string> files = Directory.EnumerateFiles(InputPath, fileFilter, (NoDeepScan ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly)).ToList();
-                    if (files.Count > 0)
-                    {
-                        foreach (string file in files)
-                        {
-                            string outputFile = (outputPath == null ?
-                                Path.Combine(Path.GetDirectoryName(file), "Converted", Path.GetFileName(file) + fileExtAttrib.TargetExtension) :
-                                Path.Combine(Path.GetDirectoryName(file.Replace(InputPath, outputPath + Path.DirectorySeparatorChar)), Path.GetFileName(file) + fileExtAttrib.TargetExtension));
-
-                            string displayInput = file.Replace(InputPath, "").TrimStart(Path.DirectorySeparatorChar);
-                            if (!Directory.Exists(Path.GetDirectoryName(outputFile))) Directory.CreateDirectory(Path.GetDirectoryName(outputFile));
-
-                            if (File.Exists(outputFile) && KeepExistingFiles)
-                                Console.WriteLine("Skipping {0}...", displayInput);
-                            else
-                            {
-                                Console.Write("Converting {0}...", displayInput);
-
-                                BaseFile instance = (Activator.CreateInstance(type, new object[] { file }) as BaseFile);
-                                if (instance.Save(outputFile))
-                                {
-                                    Console.WriteLine("done.");
-                                    successCounter++;
-                                }
-                                else
-                                {
-                                    Console.WriteLine("failed!");
-                                    failureCounter++;
-                                }
-                            }
-                        }
-                    }
-                    else
-                        Console.WriteLine("No files found!");
-
-                    Console.WriteLine();
+                    foreach (Type type in knownFileTypes)
+                        ProcessDirectory(type, ParseModes.ImportFormat);
                 }
+                else
+                    ProcessDirectory(ImageOutputType, ParseModes.ExportFormat);
             }
 
             timeTaken.Stop();
@@ -263,6 +238,62 @@ namespace Tharsis
 
             if (arguments.Length > 2)
                 ArgsHandling.CheckOptions(Switches, arguments, 2);
+        }
+
+        private static void ProcessDirectory(Type type, ParseModes parseMode)
+        {
+            FileExtensionsAttribute fileExtAttrib = (type.GetCustomAttributes(typeof(FileExtensionsAttribute), false)[0] as FileExtensionsAttribute);
+            string fileInputExtension = (parseMode == ParseModes.ImportFormat ? fileExtAttrib.ImportExtension : fileExtAttrib.ExportExtension);
+            string fileOutputExtension = (parseMode != ParseModes.ImportFormat ? fileExtAttrib.ImportExtension : fileExtAttrib.ExportExtension);
+
+            string fileFilter = "*" + fileInputExtension;
+
+            if ((inputType & PathType.ContainsFilter) != 0 && inputFilter != null)
+            {
+                //if (inputFilter != "*.*" && inputFilter != fileFilter) return;
+                if (fileFilter != inputFilter)
+                    fileFilter =
+                        (inputFilter.Contains('.') ? inputFilter.Substring(0, inputFilter.LastIndexOf('.')) : inputFilter) +
+                        (fileFilter.Substring(fileFilter.LastIndexOf('.')));
+            }
+
+            Console.WriteLine(string.Format("{0} {1}s...", (parseMode == ParseModes.ImportFormat ? "Processing" : "Generating"), type.Name).StyleLine(LineType.Overline | LineType.Underline));
+            List<string> files = Directory.EnumerateFiles((InputPath != string.Empty ? InputPath : "."), fileFilter, (NoDeepScan ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly)).ToList();
+            if (files.Count > 0)
+            {
+                foreach (string file in files)
+                {
+                    string outputFile = (outputPath == null ?
+                        Path.Combine(Path.GetDirectoryName(file), "Converted", Path.GetFileName(file) + fileOutputExtension) :
+                        Path.Combine(Path.GetDirectoryName(file.Replace(InputPath, outputPath + Path.DirectorySeparatorChar)), Path.GetFileName(file) + fileOutputExtension));
+
+                    string displayInput = (InputPath != string.Empty && InputPath != "." ? file.Replace(InputPath, "") : file).TrimStart(Path.DirectorySeparatorChar, '.');
+                    if (!Directory.Exists(Path.GetDirectoryName(outputFile))) Directory.CreateDirectory(Path.GetDirectoryName(outputFile));
+
+                    if (File.Exists(outputFile) && KeepExistingFiles)
+                        Console.WriteLine("Skipping {0}...", displayInput);
+                    else
+                    {
+                        Console.Write("Converting {0}...", displayInput);
+
+                        BaseFile instance = (Activator.CreateInstance(type, new object[] { file, parseMode }) as BaseFile);
+                        if (instance.Save(outputFile))
+                        {
+                            Console.WriteLine("done.");
+                            successCounter++;
+                        }
+                        else
+                        {
+                            Console.WriteLine("failed!");
+                            failureCounter++;
+                        }
+                    }
+                }
+            }
+            else
+                Console.WriteLine("No files found!");
+
+            Console.WriteLine();
         }
     }
 }

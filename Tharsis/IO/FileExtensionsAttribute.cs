@@ -7,13 +7,13 @@ namespace Tharsis.IO
 {
     public class FileExtensionsAttribute : Attribute
     {
-        public string SourceExtension;
-        public string TargetExtension;
+        public string ImportExtension;
+        public string ExportExtension;
 
-        public FileExtensionsAttribute(string sourceExt, string targetExt)
+        public FileExtensionsAttribute(string importExt, string exportExt)
         {
-            SourceExtension = sourceExt;
-            TargetExtension = targetExt;
+            ImportExtension = importExt;
+            ExportExtension = exportExt;
         }
     }
 }

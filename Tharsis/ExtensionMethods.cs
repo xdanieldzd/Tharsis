@@ -80,6 +80,8 @@ namespace Tharsis
                     path = Path.GetDirectoryName(path);
                 }
 
+                if (path == string.Empty) path = ".";
+
                 if ((File.GetAttributes(path) & FileAttributes.Directory) != 0)
                     result |= PathType.DirectoryFound;
                 else

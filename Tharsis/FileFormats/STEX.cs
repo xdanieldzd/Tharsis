@@ -26,12 +26,15 @@ namespace Tharsis.FileFormats
         public uint ImageOffset { get; private set; }
 
         public Bitmap Image { get; private set; }
+        public byte[] PixelData { get; private set; }
 
-        public STEX(string path) : base(path) { }
+        public STEX(string path, ParseModes mode) : base(path, mode) { }
 
-        protected override void Parse(BinaryReader reader)
+        protected override void Import(Stream sourceStream)
         {
             // "E:\[SSD User Data]\Downloads\EOIV\romfs" --ascii --colorindex --keep --output "E:\[SSD User Data]\Downloads\EOIV\dump"
+
+            BinaryReader reader = new BinaryReader(sourceStream);
 
             MagicNumber = Encoding.ASCII.GetString(reader.ReadBytes(4), 0, 4);
             ConstantZero = reader.ReadUInt32();
@@ -47,19 +50,63 @@ namespace Tharsis.FileFormats
             if (reader.ReadUInt32() != 0 || reader.ReadUInt32() != 0) ImageOffset = 0x20;
 
             reader.BaseStream.Seek(ImageOffset, SeekOrigin.Begin);
-
             Image = Texture.ToBitmap(DataType, PixelFormat, (int)Width, (int)Height, reader);
+
+            reader.BaseStream.Seek(ImageOffset, SeekOrigin.Begin);
+            PixelData = reader.ReadBytes((int)NumImageBytes);
+        }
+
+        protected override void Export(Stream sourceStream)
+        {
+            using (Bitmap tempBitmap = new Bitmap(sourceStream))
+            {
+                Image = new Bitmap(tempBitmap.Width, tempBitmap.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                using (Graphics gr = Graphics.FromImage(Image))
+                {
+                    gr.DrawImage(tempBitmap, new Rectangle(0, 0, Image.Width, Image.Height));
+                }
+                PixelData = Texture.ToBytes(Image, Program.ImageOutputDataType, Program.ImageOutputPixelFormat);
+            }
         }
 
         public override bool Save(string path)
         {
-            if (Image != null)
+            switch (this.ParseMode)
             {
-                Image.Save(path);
-                return true;
+                case ParseModes.ImportFormat:
+                    if (Image != null)
+                    {
+                        Image.Save(path);
+                        return true;
+                    }
+                    break;
+
+                case ParseModes.ExportFormat:
+                    using (FileStream stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.ReadWrite))
+                    {
+                        BinaryWriter writer = new BinaryWriter(stream);
+
+                        writer.Write(Encoding.ASCII.GetBytes("STEX"));
+                        writer.Write((uint)0);
+                        writer.Write((uint)3553);
+                        writer.Write((uint)Image.Width);
+                        writer.Write((uint)Image.Height);
+                        writer.Write((uint)Program.ImageOutputDataType);
+                        writer.Write((uint)Program.ImageOutputPixelFormat);
+                        long numImageBytesPosition = writer.BaseStream.Position;
+                        writer.Write(uint.MaxValue);
+                        writer.Write((uint)0x80);
+                        while (writer.BaseStream.Position < 0x80) writer.Write((byte)0);
+
+                        writer.Write(PixelData);
+
+                        writer.BaseStream.Seek(numImageBytesPosition, SeekOrigin.Begin);
+                        writer.Write((uint)(writer.BaseStream.Length - 0x80));
+                    }
+                    return true;
             }
-            else
-                return false;
+
+            return false;
         }
     }
 }

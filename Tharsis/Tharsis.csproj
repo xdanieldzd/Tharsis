@@ -46,7 +46,6 @@
   <ItemGroup>
     <Compile Include="ArgsHandling.cs" />
     <Compile Include="FileFormats\FileFormatException.cs" />
-    <Compile Include="FileFormats\PNG.cs" />
     <Compile Include="IO\BaseFile.cs" />
     <Compile Include="Images\ImageException.cs" />
     <Compile Include="Images\Pica.cs" />
