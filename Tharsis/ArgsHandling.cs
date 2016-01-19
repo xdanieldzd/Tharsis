@@ -51,16 +51,32 @@ namespace Tharsis
 
         public static void PrintOptionHelp(List<Switch> switches)
         {
-            int maxSwitchLen = (switches.Select(x => (x.Option.Length + 2) + (x.ShortOption != string.Empty ? x.ShortOption.Length + 4 : 0) + x.ArgsHelp.Length).Max());
+            int maxSwitchLen = (switches.Select(x => (x.Option.Length + 2) + (x.ShortOption != string.Empty ? x.ShortOption.Length + 4 : 0) + (x.ArgsHelp.Length < 8 ? x.ArgsHelp.Length : 0)).Max());
 
             Console.WriteLine("Options:");
             foreach (Switch optSwitch in switches)
             {
+                bool hasLongArgs = (optSwitch.ArgsHelp.Length >= 8);
                 string shortOpt = (optSwitch.ShortOption != string.Empty ? string.Format("-{0}, ", optSwitch.ShortOption) : "");
-                string startString = string.Format("  {0}--{1} {2}", shortOpt, optSwitch.Option, optSwitch.ArgsHelp);
-                startString += new string(' ', maxSwitchLen - (optSwitch.Option.Length + shortOpt.Length + optSwitch.ArgsHelp.Length));
 
-                List<string> helpStrings = Wrap(optSwitch.HelpText, Console.BufferWidth - startString.Length - 3);
+                string startString = string.Empty;
+                int helpLength = 0;
+
+                if (!hasLongArgs)
+                {
+                    startString = string.Format("  {0}--{1} {2}", shortOpt, optSwitch.Option, optSwitch.ArgsHelp);
+                    startString += new string(' ', maxSwitchLen - (optSwitch.Option.Length + shortOpt.Length + optSwitch.ArgsHelp.Length));
+                    helpLength = Console.BufferWidth - startString.Length - 3;
+                }
+                else
+                {
+                    startString = string.Format("  {0}--{1} ", shortOpt, optSwitch.Option);
+                    helpLength = Console.BufferWidth - startString.Length - 3;
+                    startString += string.Format("{0}{1}", optSwitch.ArgsHelp, Environment.NewLine);
+                    startString += new string(' ', maxSwitchLen + 5);
+                }
+
+                List<string> helpStrings = Wrap(optSwitch.HelpText, helpLength);
 
                 Console.Write(startString);
                 foreach (string help in helpStrings)

@@ -16,8 +16,8 @@ namespace Tharsis.FileFormats
     public class STEX : BaseFile
     {
         public string MagicNumber { get; private set; }
-        public uint Unknown1 { get; private set; }
-        public uint Unknown2 { get; private set; }
+        public uint ConstantZero { get; private set; }
+        public uint Constant3553 { get; private set; }
         public uint Width { get; private set; }
         public uint Height { get; private set; }
         public Pica.DataTypes DataType { get; private set; }
@@ -34,8 +34,8 @@ namespace Tharsis.FileFormats
             // "E:\[SSD User Data]\Downloads\EOIV\romfs" --ascii --colorindex --keep --output "E:\[SSD User Data]\Downloads\EOIV\dump"
 
             MagicNumber = Encoding.ASCII.GetString(reader.ReadBytes(4), 0, 4);
-            Unknown1 = reader.ReadUInt32();
-            Unknown2 = reader.ReadUInt32();
+            ConstantZero = reader.ReadUInt32();
+            Constant3553 = reader.ReadUInt32();
             Width = reader.ReadUInt32();
             Height = reader.ReadUInt32();
             DataType = (Pica.DataTypes)reader.ReadUInt32();

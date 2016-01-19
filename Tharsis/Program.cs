@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Diagnostics;
 
 using Tharsis.IO;
+using Tharsis.Images;
 
 namespace Tharsis
 {
@@ -20,6 +21,7 @@ namespace Tharsis
 
         public static string InputPath { get; private set; }
 
+        static List<Type> knownFileTypes;
         static PathType inputType;
         static string inputFilter;
         static string outputPath;
@@ -28,6 +30,10 @@ namespace Tharsis
         public static bool NoDeepScan = true;
         public static bool KeepExistingFiles = false;
         public static bool ConvertTMXIndexed = false;
+
+        public static Type ImageOutputType = null;
+        public static Pica.DataTypes ImageOutputDataType = 0;
+        public static Pica.PixelFormats ImageOutputPixelFormat = 0;
 
         static void Main(string[] args)
         {
@@ -42,13 +48,13 @@ namespace Tharsis
             Console.WriteLine(headerString.ToString().Center(2).StyleLine(LineType.Overline | LineType.Underline));
             Console.WriteLine();
 
-            InitializeSwitches();
-            VerifyArguments(args.ParseArguments());
-
-            List<Type> knownFileTypes = Assembly.GetExecutingAssembly().GetTypes()
+            knownFileTypes = Assembly.GetExecutingAssembly().GetTypes()
                 .Where(x => x.BaseType == typeof(BaseFile) && x.GetCustomAttributes(typeof(FileExtensionsAttribute), false).Length != 0)
                 .OrderBy(x => x.Name)
                 .ToList();
+
+            InitializeSwitches();
+            VerifyArguments(args.ParseArguments());
 
             successCounter = failureCounter = 0;
 
@@ -78,7 +84,7 @@ namespace Tharsis
                 string displayInput = (inputFileDirectory != string.Empty ? InputPath.Replace(Path.GetDirectoryName(InputPath), "").TrimStart(Path.DirectorySeparatorChar) : InputPath);
 
                 string outputFileDirectory = Path.GetDirectoryName(outputPath);
-                if (outputFileDirectory != string.Empty && !Directory.Exists(outputFileDirectory)) Directory.CreateDirectory(outputFileDirectory);
+                if (outputFileDirectory != null && outputFileDirectory != string.Empty && !Directory.Exists(outputFileDirectory)) Directory.CreateDirectory(outputFileDirectory);
 
                 if ((File.Exists(outputPath) && KeepExistingFiles) || fileType == null)
                     Console.WriteLine("Skipping {0}...", displayInput);
@@ -210,6 +216,17 @@ namespace Tharsis
                 ConvertTMXIndexed = true;
                 return index;
             }), shortOption: "c"));
+
+            Switches.Add(new Switch("fileformat", "Specify output formats for given image file(s)", new Func<string[], int, int>((arguments, index) =>
+            {
+                if (index + 3 < arguments.Length)
+                {
+                    ImageOutputType = knownFileTypes.FirstOrDefault(x => x.Name.ToLowerInvariant() == arguments[index + 1].ToLowerInvariant());
+                    Enum.TryParse<Pica.DataTypes>(arguments[index + 2], false, out ImageOutputDataType);
+                    Enum.TryParse<Pica.PixelFormats>(arguments[index + 3], false, out ImageOutputPixelFormat);
+                }
+                return (index + 3);
+            }), shortOption: "f", argsHelp: "<filetype> <datatype> <pixelformat>"));
 
             Switches.Add(new Switch("help", "Show this help message", new Func<string[], int, int>((arguments, index) =>
             {
