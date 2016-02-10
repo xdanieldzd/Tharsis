@@ -107,10 +107,17 @@ namespace Tharsis.FileFormats
             /* Convert image according to color depth */
             switch (PixelFormat)
             {
-                case TMXPixelFormat.PSMT8: Convert8bpp(reader); break;
-                case TMXPixelFormat.PSMT4: Convert4bpp(reader); break;
+                case TMXPixelFormat.PSMT8: ConvertIndexed8(reader); break;
+                case TMXPixelFormat.PSMT4: ConvertIndexed4(reader); break;
+                case TMXPixelFormat.PSMCT32: Convert32(reader); break;
                 default: throw new FileFormatException(string.Format("Unrecognized pixel format {0}", PixelFormat));
             }
+        }
+
+        private byte ScaleAlpha(byte a)
+        {
+            /* Required for indexed AND non-indexed formats */
+            return (byte)Math.Min((255.0f * (a / 128.0f)), 0xFF);
         }
 
         private Color[] ConvertPalette(BinaryReader reader, int colorCount)
@@ -126,7 +133,7 @@ namespace Tharsis.FileFormats
                     r = (byte)color;
                     g = (byte)(color >> 8);
                     b = (byte)(color >> 16);
-                    a = (byte)(color >> 24);
+                    a = ScaleAlpha((byte)(color >> 24));
                 }
                 else
                 {
@@ -134,9 +141,8 @@ namespace Tharsis.FileFormats
                     r = (byte)((color & 0x001F) << 3);
                     g = (byte)(((color & 0x03E0) >> 5) << 3);
                     b = (byte)(((color & 0x7C00) >> 10) << 3);
-                    a = (byte)(i == 0 ? 0 : 0xFF);
+                    a = ScaleAlpha((byte)(i == 0 ? 0 : 0xFF));
                 }
-                a = (byte)Math.Min((255.0f * (a / 128.0f)), 0xFF);
                 tempPalette[i] = Color.FromArgb(a, r, g, b);
             }
 
@@ -158,12 +164,15 @@ namespace Tharsis.FileFormats
             return newPalette;
         }
 
-        private void SetupIndexedBitmap()
+        private void SetupBitmap(bool indexed)
         {
-            /* Copy palette to image */
-            ColorPalette imagePalette = Image.Palette;
-            Array.Copy(Palette, imagePalette.Entries, Palette.Length);
-            Image.Palette = imagePalette;
+            if (indexed)
+            {
+                /* Copy palette to image */
+                ColorPalette imagePalette = Image.Palette;
+                Array.Copy(Palette, imagePalette.Entries, Palette.Length);
+                Image.Palette = imagePalette;
+            }
 
             /* Lock bitmap, prepare byte array for writing */
             bmpData = Image.LockBits(new Rectangle(0, 0, Image.Width, Image.Height), ImageLockMode.ReadWrite, Image.PixelFormat);
@@ -171,14 +180,14 @@ namespace Tharsis.FileFormats
             Marshal.Copy(bmpData.Scan0, pixelData, 0, pixelData.Length);
         }
 
-        private void FinalizeIndexed()
+        private void FinalizeBitmap()
         {
             /* Copy array back, then unlock bitmap */
             Marshal.Copy(pixelData, 0, bmpData.Scan0, pixelData.Length);
             Image.UnlockBits(bmpData);
         }
 
-        private void Convert4bpp(BinaryReader reader)
+        private void ConvertIndexed4(BinaryReader reader)
         {
             Palette = ConvertPalette(reader, 16);
 
@@ -186,14 +195,14 @@ namespace Tharsis.FileFormats
             {
                 Image = new Bitmap(Width, Height, System.Drawing.Imaging.PixelFormat.Format4bppIndexed);
 
-                SetupIndexedBitmap();
+                SetupBitmap(true);
 
                 int dataSize = (Width * Height) / 2;
                 Buffer.BlockCopy(reader.ReadBytes(dataSize), 0, pixelData, 0, dataSize);
                 /* Swap nibbles */
                 for (int i = 0; i < pixelData.Length; i++) pixelData[i] = (byte)((pixelData[i] >> 4) | (pixelData[i] << 4));
 
-                FinalizeIndexed();
+                FinalizeBitmap();
             }
             else
             {
@@ -210,7 +219,7 @@ namespace Tharsis.FileFormats
             }
         }
 
-        private void Convert8bpp(BinaryReader reader)
+        private void ConvertIndexed8(BinaryReader reader)
         {
             Palette = ConvertPalette(reader, 256);
 
@@ -218,12 +227,12 @@ namespace Tharsis.FileFormats
             {
                 Image = new Bitmap(Width, Height, System.Drawing.Imaging.PixelFormat.Format8bppIndexed);
 
-                SetupIndexedBitmap();
+                SetupBitmap(true);
 
                 int dataSize = (Width * Height);
                 Buffer.BlockCopy(reader.ReadBytes(dataSize), 0, pixelData, 0, dataSize);
 
-                FinalizeIndexed();
+                FinalizeBitmap();
             }
             else
             {
@@ -232,6 +241,22 @@ namespace Tharsis.FileFormats
                     for (int x = 0; x < Width; x++)
                         Image.SetPixel(x, y, Palette[reader.ReadByte()]);
             }
+        }
+
+        private void Convert32(BinaryReader reader)
+        {
+            Image = new Bitmap(Width, Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+            SetupBitmap(false);
+
+            for (int i = 0; i < (bmpData.Width * bmpData.Stride); i += 4)
+            {
+                pixelData[i + 2] = reader.ReadByte();
+                pixelData[i + 1] = reader.ReadByte();
+                pixelData[i + 0] = reader.ReadByte();
+                pixelData[i + 3] = ScaleAlpha(reader.ReadByte());
+            }
+            FinalizeBitmap();
         }
 
         public override bool Save(string path)
