@@ -254,7 +254,8 @@ namespace Tharsis.FileFormats
                 pixelData[i + 2] = reader.ReadByte();
                 pixelData[i + 1] = reader.ReadByte();
                 pixelData[i + 0] = reader.ReadByte();
-                pixelData[i + 3] = ScaleAlpha(Program.IgnoreTMXAlpha ? (byte)0x80 : reader.ReadByte());
+                byte a = reader.ReadByte();
+                pixelData[i + 3] = ScaleAlpha(Program.IgnoreTMXAlpha ? (byte)0x80 : a);
             }
             FinalizeBitmap();
         }
