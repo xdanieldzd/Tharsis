@@ -133,7 +133,7 @@ namespace Tharsis.FileFormats
                     r = (byte)color;
                     g = (byte)(color >> 8);
                     b = (byte)(color >> 16);
-                    a = ScaleAlpha((byte)(color >> 24));
+                    a = ScaleAlpha(Program.IgnoreTMXAlpha ? (byte)0x80 : (byte)(color >> 24));
                 }
                 else
                 {
@@ -141,7 +141,7 @@ namespace Tharsis.FileFormats
                     r = (byte)((color & 0x001F) << 3);
                     g = (byte)(((color & 0x03E0) >> 5) << 3);
                     b = (byte)(((color & 0x7C00) >> 10) << 3);
-                    a = ScaleAlpha((byte)(i == 0 ? 0 : 0xFF));
+                    a = ScaleAlpha(Program.IgnoreTMXAlpha ? (byte)0x80 : (byte)(i == 0 ? 0 : 0x80));
                 }
                 tempPalette[i] = Color.FromArgb(a, r, g, b);
             }
@@ -254,7 +254,7 @@ namespace Tharsis.FileFormats
                 pixelData[i + 2] = reader.ReadByte();
                 pixelData[i + 1] = reader.ReadByte();
                 pixelData[i + 0] = reader.ReadByte();
-                pixelData[i + 3] = ScaleAlpha(reader.ReadByte());
+                pixelData[i + 3] = ScaleAlpha(Program.IgnoreTMXAlpha ? (byte)0x80 : reader.ReadByte());
             }
             FinalizeBitmap();
         }

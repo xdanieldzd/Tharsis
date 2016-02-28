@@ -28,6 +28,7 @@ namespace Tharsis
         public static bool NoDeepScan = true;
         public static bool KeepExistingFiles = false;
         public static bool ConvertTMXIndexed = false;
+        public static bool IgnoreTMXAlpha = false;
 
         static void Main(string[] args)
         {
@@ -210,6 +211,12 @@ namespace Tharsis
                 ConvertTMXIndexed = true;
                 return index;
             }), shortOption: "c"));
+
+            Switches.Add(new Switch("ignorealpha", "Ignore alpha channel in TMX files and force it fully opaque", new Func<string[], int, int>((arguments, index) =>
+            {
+                IgnoreTMXAlpha = true;
+                return index;
+            }), shortOption: "i"));
 
             Switches.Add(new Switch("help", "Show this help message", new Func<string[], int, int>((arguments, index) =>
             {
