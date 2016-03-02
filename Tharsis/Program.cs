@@ -37,7 +37,7 @@ namespace Tharsis
             Console.Title = Path.GetFileName(ApplicationPath);
 
             StringBuilder headerString = new StringBuilder();
-            headerString.AppendFormat("Tharsis {0}.{1} - Generic Game File Converter\n", ApplicationVersion.Major, ApplicationVersion.Minor);
+            headerString.AppendFormat("Tharsis v{0}.{1}.{2} - Generic Game File Converter\n", ApplicationVersion.Major, ApplicationVersion.Minor, ApplicationVersion.Build);
             headerString.Append("Written 2014-2016 by xdaniel - http://magicstone.de/dzd/");
 
             Console.WriteLine(headerString.ToString().Center(2).StyleLine(LineType.Overline | LineType.Underline));

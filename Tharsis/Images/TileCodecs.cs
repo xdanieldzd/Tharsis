@@ -39,9 +39,9 @@ namespace Tharsis.Images
             /* ETC1     */ new Codec(Pica.DataTypes.UnsignedByte,       Pica.PixelFormats.ETC1RGB8NativeDMP,        DecodeETC1,     null),
             /* ETC1_A4  */ new Codec(Pica.DataTypes.UnsignedByte,       Pica.PixelFormats.ETC1AlphaRGB8A4NativeDMP, DecodeETC1_A4,  null),
             /* A8       */ new Codec(Pica.DataTypes.UnsignedByte,       Pica.PixelFormats.AlphaNativeDMP,           DecodeA8,       EncodeA8),
-            /* A4       */ new Codec(Pica.DataTypes.Unsigned4BitsDMP,   Pica.PixelFormats.AlphaNativeDMP,           null /*DecodeA4*/, null),
+            /* A4       */ new Codec(Pica.DataTypes.Unsigned4BitsDMP,   Pica.PixelFormats.AlphaNativeDMP,           DecodeA4,       null),
             /* L8       */ new Codec(Pica.DataTypes.UnsignedByte,       Pica.PixelFormats.LuminanceNativeDMP,       DecodeL8,       EncodeL8),
-            /* L4       */ new Codec(Pica.DataTypes.Unsigned4BitsDMP,   Pica.PixelFormats.LuminanceNativeDMP,       null /*DecodeL4*/, null),
+            /* L4       */ new Codec(Pica.DataTypes.Unsigned4BitsDMP,   Pica.PixelFormats.LuminanceNativeDMP,       DecodeL4,       null),
             /* LA88     */ new Codec(Pica.DataTypes.UnsignedByte,       Pica.PixelFormats.LuminanceAlphaNativeDMP,  DecodeLA88,     EncodeLA88),
             /* LA44     */ new Codec(Pica.DataTypes.UnsignedByte44DMP,  Pica.PixelFormats.LuminanceAlphaNativeDMP,  DecodeLA44,     EncodeLA44)
         };
@@ -221,7 +221,6 @@ namespace Tharsis.Images
 
         private static void DecodeA4(BinaryReader reader, byte[] targetData, int x, int y, int width, int height)
         {
-            // TODO: fixme?
             for (int t = 0; t < tileOrder.Length; t += 2)
             {
                 byte a4 = reader.ReadByte();
@@ -251,7 +250,6 @@ namespace Tharsis.Images
 
         private static void DecodeL4(BinaryReader reader, byte[] targetData, int x, int y, int width, int height)
         {
-            // TODO: fixme?
             for (int t = 0; t < tileOrder.Length; t += 2)
             {
                 byte l4 = reader.ReadByte();
