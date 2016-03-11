@@ -11,6 +11,8 @@ using Tharsis.IO;
 
 namespace Tharsis.FileFormats
 {
+    /* TODO: rewrite to be clearner, w/ less duplication! Maybe generalize TileCodecs code to allow non-tiled images to be converted? Take code from GXTConvert for that? */
+
     /* Better palette conversion based on information from... */
     /* http://forums.pcsx2.net/Thread-TMX-file-format-in-Persona-3-4 */
     /* http://forum.xentax.com/viewtopic.php?f=18&t=2922&start=0 */
@@ -109,6 +111,8 @@ namespace Tharsis.FileFormats
             {
                 case TMXPixelFormat.PSMT8: ConvertIndexed8(reader); break;
                 case TMXPixelFormat.PSMT4: ConvertIndexed4(reader); break;
+                case TMXPixelFormat.PSMCT16: Convert16(reader); break;
+                case TMXPixelFormat.PSMCT24: Convert24(reader); break;
                 case TMXPixelFormat.PSMCT32: Convert32(reader); break;
                 default: throw new FileFormatException(string.Format("Unrecognized pixel format {0}", PixelFormat));
             }
@@ -243,13 +247,58 @@ namespace Tharsis.FileFormats
             }
         }
 
+        /* Copypasta from TileCodecs.cs; didn't want to make that instance public */
+
+        private static byte ResampleChannel(int value, int sourceBits, int targetBits)
+        {
+            byte sourceMask = (byte)((1 << sourceBits) - 1);
+            byte targetMask = (byte)((1 << targetBits) - 1);
+            return (byte)((((value & sourceMask) * targetMask) + (sourceMask >> 1)) / sourceMask);
+        }
+
+        /* TODO: bmpData Height vs Stride, verify! */
+
+        private void Convert16(BinaryReader reader)
+        {
+            Image = new Bitmap(Width, Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+            SetupBitmap(false);
+
+            for (int i = 0; i < (bmpData.Width * bmpData.Height) * (Bitmap.GetPixelFormatSize(Image.PixelFormat) / 8); i += 4)
+            {
+                ushort rgba = reader.ReadUInt16();
+                pixelData[i + 2] = ResampleChannel((rgba >> 0), 5, 8);
+                pixelData[i + 1] = ResampleChannel((rgba >> 5), 5, 8);
+                pixelData[i + 0] = ResampleChannel((rgba >> 10), 5, 8);
+                /* TODO: verify alpha */
+                pixelData[i + 3] = ScaleAlpha(Program.IgnoreTMXAlpha ? (byte)0x80 : ResampleChannel((rgba >> 15), 1, 8));
+            }
+            FinalizeBitmap();
+        }
+
+        private void Convert24(BinaryReader reader)
+        {
+            Image = new Bitmap(Width, Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+            SetupBitmap(false);
+
+            for (int i = 0; i < (bmpData.Width * bmpData.Height) * (Bitmap.GetPixelFormatSize(Image.PixelFormat) / 8); i += 4)
+            {
+                pixelData[i + 2] = reader.ReadByte();
+                pixelData[i + 1] = reader.ReadByte();
+                pixelData[i + 0] = reader.ReadByte();
+                pixelData[i + 3] = ScaleAlpha(0x80);
+            }
+            FinalizeBitmap();
+        }
+
         private void Convert32(BinaryReader reader)
         {
             Image = new Bitmap(Width, Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
 
             SetupBitmap(false);
 
-            for (int i = 0; i < (bmpData.Width * bmpData.Stride); i += 4)
+            for (int i = 0; i < (bmpData.Width * bmpData.Height) * (Bitmap.GetPixelFormatSize(Image.PixelFormat) / 8); i += 4)
             {
                 pixelData[i + 2] = reader.ReadByte();
                 pixelData[i + 1] = reader.ReadByte();
